@@ -195,9 +195,3 @@ Contribuições são muito bem-vindas! Siga os passos abaixo:
 3. Faça commit das suas alterações (`git commit -m 'feat: Adiciona nova funcionalidade'`).
 4. Envie para a branch principal (`git push origin feature/minha-feature`).
 5. Abra um **Pull Request**.
-
----
-
-## 📄 Licença
-
-Este projeto está sob a licença [MIT](LICENSE). Consulte o arquivo `LICENSE` para mais detalhes.
