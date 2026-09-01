@@ -7,7 +7,6 @@
 ![MariaDB](https://img.shields.io/badge/MariaDB-11.4-003545?style=for-the-badge&logo=mariadb&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/Vanilla_JS-ES6+-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
-![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
 
 <p align="center">
   <b>Sistema corporativo moderno, responsivo e seguro para gestão centralizada, consulta e discagem de ramais telefônicos multiunidades.</b>
