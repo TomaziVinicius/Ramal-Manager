@@ -1727,6 +1727,25 @@ html[data-role="admin"] section.admin-only:not(.hidden) {
   box-shadow: var(--shadow-md);
 }
 
+.establishment-section--highlight {
+  animation: establishmentPulse 2.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+@keyframes establishmentPulse {
+  0% {
+    box-shadow: 0 0 0 4px var(--color-primary), 0 12px 30px -4px rgba(0, 0, 0, 0.25);
+    transform: translateY(-3px);
+  }
+  50% {
+    box-shadow: 0 0 0 4px var(--color-primary-light), 0 8px 20px -4px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+  }
+  100% {
+    box-shadow: var(--shadow-sm);
+    transform: translateY(0);
+  }
+}
+
 .establishment-header {
   padding: 16px 24px;
   display: flex;

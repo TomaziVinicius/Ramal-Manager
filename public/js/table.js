@@ -226,6 +226,12 @@ const Table = (function() {
         }
     }
 
+    function clearFilters() {
+        _searchQuery = '';
+        _filters = { status: '', localizacao: '', setor: '', empresa: '' };
+        _applySearchAndFilters();
+    }
+
     function sortBy(field) {
         if (_sortField === field) {
             _sortDirection = _sortDirection === 'asc' ? 'desc' : 'asc';
@@ -521,6 +527,7 @@ const Table = (function() {
         getFilteredRecords,
         setSearchQuery,
         setFilter,
+        clearFilters,
         sortBy,
         setPage,
         setPageSize,

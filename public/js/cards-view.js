@@ -299,17 +299,23 @@ const CardsView = (function() {
         navContainer.querySelectorAll('.establishment-nav-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const target = btn.dataset.target;
-                navContainer.querySelectorAll('.establishment-nav-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
+                const estName = btn.dataset.name || '';
 
-                if (target === 'all') {
-                    _activeEstablishment = 'all';
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                if (typeof CardsView.onEstablishmentSelect === 'function') {
+                    CardsView.onEstablishmentSelect(target, estName);
                 } else {
-                    _activeEstablishment = target;
-                    const sec = document.getElementById(target);
-                    if (sec) {
-                        sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    navContainer.querySelectorAll('.establishment-nav-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    if (target === 'all') {
+                        _activeEstablishment = 'all';
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else {
+                        _activeEstablishment = target;
+                        const sec = document.getElementById(target);
+                        if (sec) {
+                            sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
                     }
                 }
             });
@@ -581,7 +587,18 @@ const CardsView = (function() {
             .replace(/'/g, '&#039;');
     }
 
+    function setActiveEstablishment(target) {
+        _activeEstablishment = target || 'all';
+    }
+
+    function getActiveEstablishment() {
+        return _activeEstablishment;
+    }
+
     return {
-        render
+        render,
+        setActiveEstablishment,
+        getActiveEstablishment,
+        onEstablishmentSelect: null
     };
 })();

@@ -330,6 +330,80 @@ const App = (function() {
     }
 
     /**
+     * Seleciona um estabelecimento a partir dos botões superiores da barra de navegação,
+     * limpando todos os outros filtros específicos (status, setor, empresa, busca) e direcionando ao estabelecimento.
+     */
+    function _selectEstablishment(target, estName = '') {
+        // 1. Limpar termo de busca
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) searchInput.value = '';
+        _currentSearch = '';
+
+        // 2. Limpar todos os selects específicos (status, estabelecimento, setor e empresa) mantendo-os sempre em "Todos"
+        const filterStatus = document.getElementById('filter-status');
+        if (filterStatus) filterStatus.value = '';
+
+        const filterLoc = document.getElementById('filter-localizacao');
+        if (filterLoc) filterLoc.value = '';
+
+        const filterSetor = document.getElementById('filter-setor');
+        if (filterSetor) filterSetor.value = '';
+
+        const filterEmpresa = document.getElementById('filter-empresa');
+        if (filterEmpresa) filterEmpresa.value = '';
+
+        // 3. Resetar estados internos de filtros para vazio (Todos)
+        _currentFilters = {
+            status: '',
+            localizacao: '',
+            setor: '',
+            empresa: ''
+        };
+
+        // 4. Limpar filtros no módulo Table
+        Table.clearFilters();
+
+        // 6. Atualizar classes ativas nos botões superiores de estabelecimento
+        const navContainer = document.getElementById('establishment-nav-bar');
+        if (navContainer) {
+            navContainer.querySelectorAll('.establishment-nav-btn').forEach(b => {
+                if (b.dataset.target === target) b.classList.add('active');
+                else b.classList.remove('active');
+            });
+        }
+
+        // 7. Direcionar conforme o modo de visualização ativo
+        if (_viewMode === 'cards' && typeof CardsView !== 'undefined') {
+            CardsView.setActiveEstablishment(target);
+            // Renderiza todos os cartões (sem restrições dos outros filtros específicos)
+            CardsView.render(_records, '', {});
+
+            // Rolar suavemente e destacar o estabelecimento selecionado
+            if (target === 'all') {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                setTimeout(() => {
+                    const sec = document.getElementById(target);
+                    if (sec) {
+                        sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        sec.classList.remove('establishment-section--highlight');
+                        void sec.offsetWidth; // Forçar reflow para reiniciar animação
+                        sec.classList.add('establishment-section--highlight');
+                        setTimeout(() => sec.classList.remove('establishment-section--highlight'), 2200);
+                    }
+                }, 60);
+            }
+        } else {
+            // Modo Tabela
+            Table.render();
+            const tableEl = document.getElementById('ramais-table-wrapper');
+            if (tableEl) {
+                tableEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    }
+
+    /**
      * Vinculação de eventos DOM.
      */
     function _bindEvents() {
@@ -576,6 +650,13 @@ const App = (function() {
             btnClearSelection.addEventListener('click', () => Table.clearSelection());
         }
 
+        // Integração da Barra Superior de Estabelecimentos (Limpa filtros específicos e direciona)
+        if (typeof CardsView !== 'undefined') {
+            CardsView.onEstablishmentSelect = (target, estName) => {
+                _selectEstablishment(target, estName);
+            };
+        }
+
         // Alternar Modo de Visualização (Cards vs Tabela)
         const btnToggleViewMode = document.getElementById('btn-toggle-view-mode');
         if (btnToggleViewMode) {
@@ -601,7 +682,7 @@ const App = (function() {
             });
         }
 
-        // Filtros
+        // Filtros Específicos
         ['filter-status', 'filter-localizacao', 'filter-setor', 'filter-empresa'].forEach(id => {
             const el = document.getElementById(id);
             if (el) {
@@ -609,6 +690,20 @@ const App = (function() {
                 el.addEventListener('change', (e) => {
                     _currentFilters[filterKey] = e.target.value;
                     Table.setFilter(filterKey, e.target.value);
+
+                    // Sincronizar barra de estabelecimentos se mudou pelo dropdown
+                    if (filterKey === 'localizacao') {
+                        const val = e.target.value;
+                        const navContainer = document.getElementById('establishment-nav-bar');
+                        if (navContainer) {
+                            navContainer.querySelectorAll('.establishment-nav-btn').forEach(b => {
+                                if (!val && b.dataset.target === 'all') b.classList.add('active');
+                                else if (val && (b.dataset.name === val || b.dataset.target === 'est-' + _cleanStr(val))) b.classList.add('active');
+                                else b.classList.remove('active');
+                            });
+                        }
+                    }
+
                     if (_viewMode === 'cards' && typeof CardsView !== 'undefined') {
                         CardsView.render(_records, _currentSearch, _currentFilters);
                     }
