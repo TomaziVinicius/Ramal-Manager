@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sistema de Gerenciamento e Consulta de Ramais Telefônicos">
+  <title>Gerenciador de Ramais</title>
+  
+  <!-- Fontes Google Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Estilos da Aplicação -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Container de Toasts / Notificações -->
+  <div id="notifications" class="notification-container" aria-live="polite"></div>
+
+  <!-- ========================================================================= -->
+  <!-- TELA INICIAL DE LOGIN OBRIGATÓRIA (GATE LDAP / AD)                        -->
+  <!-- ========================================================================= -->
+  <div id="login-gate-screen" class="login-gate-screen">
+    <div class="login-gate-card">
+      <div class="login-gate-brand">
+        <img id="login-logo" class="login-logo" src="" alt="Logo" style="display:none;">
+        <div class="login-logo-placeholder" id="login-logo-placeholder">📞</div>
+        <h1 class="login-title">Portal de Ramais</h1>
+        <p class="login-subtitle">Autenticação de Usuário</p>
+      </div>
+
+      <!-- Formulário de Login Unificado -->
+      <form id="form-login" class="login-form" onsubmit="return false;">
+        <div class="form-group">
+          <label class="form-label" for="login-username">Usuário:</label>
+          <div class="input-icon-wrapper">
+            <span class="input-icon">👤</span>
+            <input type="text" class="form-input" id="login-username" placeholder="Digite seu usuário" required autofocus>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="login-password">Senha:</label>
+          <div class="input-icon-wrapper">
+            <span class="input-icon">🔒</span>
+            <input type="password" class="form-input" id="login-password" placeholder="Digite sua senha" required>
+          </div>
+        </div>
+
+        <button class="btn btn--primary btn--block btn--lg" id="btn-do-login" type="submit">
+          Entrar no Sistema
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Overlay para fechar sidebar no mobile -->
+  <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
+
+  <!-- ========================================================================= -->
+  <!-- LAYOUT PRINCIPAL DO SISTEMA (VISÍVEL APENAS APÓS AUTENTICAÇÃO)            -->
+  <!-- ========================================================================= -->
+  <div class="app-layout hidden" id="app-layout">
+    <!-- ========================================== -->
+    <!-- 1. SIDEBAR FIXA LATERAL                     -->
+    <!-- ========================================== -->
+    <aside class="app-sidebar" id="app-sidebar">
+      <div class="sidebar-brand">
+        <img id="app-logo" class="sidebar-logo" src="" alt="Logo" style="display:none">
+        <div class="sidebar-brand-text">
+          <h2 class="sidebar-title">Ramais</h2>
+          <span class="sidebar-subtitle">Gestão Telefônica</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Menu Principal</div>
+        <a href="#ramais" class="nav-item active" data-view="ramais">
+          <span class="nav-icon">📞</span>
+          <span class="nav-label">Ramais</span>
+        </a>
+        <a href="#dashboard" class="nav-item admin-only" data-view="dashboard">
+          <span class="nav-icon">📊</span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+        <a href="#colaboradores" class="nav-item admin-only" data-view="colaboradores">
+          <span class="nav-icon">👥</span>
+          <span class="nav-label">Colaboradores</span>
+        </a>
+        <a href="#configuracoes" class="nav-item admin-only" data-view="configuracoes">
+          <span class="nav-icon">⚙️</span>
+          <span class="nav-label">Configurações</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="server-status">
+          <span class="status-indicator online"></span>
+          <span class="status-text">Sistema Online</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ========================================== -->
+    <!-- 2. CONTEÚDO PRINCIPAL (MAIN AREA)          -->
+    <!-- ========================================== -->
+    <main class="app-main">
+      <!-- Topbar Superior -->
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <button class="btn-toggle-sidebar" id="btn-toggle-sidebar" aria-label="Abrir Menu">☰</button>
+          <h1 class="page-title" id="page-title">Lista Geral de Ramais</h1>
+        </div>
+        <div class="topbar-right">
+          <span class="role-badge role-badge--colab" id="user-role-badge">Colaborador</span>
+          <button class="btn btn--secondary btn--sm" id="btn-topbar-login" type="button">🔐 Admin</button>
+          <button class="btn btn--ghost btn--sm" id="btn-logout" type="button" title="Encerrar Sessão">🚪 Sair</button>
+          <button class="theme-toggle" id="theme-toggle" aria-label="Alternar Tema" title="Alternar Tema">🌙</button>
+        </div>
+      </header>
+
+      <div class="app-content">
+        <!-- ========================================== -->
+        <!-- VIEW 1: DASHBOARD                          -->
+        <!-- ========================================== -->
+        <section class="view-container hidden" id="view-dashboard">
+          <!-- Grade de Indicadores / Cards -->
+          <div class="stats-grid">
+            <div class="stat-card" id="stat-total">
+              <div class="stat-card__icon">📞</div>
+              <div class="stat-card__content">
+                <div class="stat-card__value">0</div>
+                <div class="stat-card__label">Total de Ramais</div>
+              </div>
+            </div>
+            <div class="stat-card stat-card--success" id="stat-ativos">
+              <div class="stat-card__icon">🟢</div>
+              <div class="stat-card__content">
+                <div class="stat-card__value">0</div>
+                <div class="stat-card__label">Ramais Ativos</div>
+              </div>
+            </div>
+            <div class="stat-card stat-card--danger" id="stat-inativos">
+              <div class="stat-card__icon">🔴</div>
+              <div class="stat-card__content">
+                <div class="stat-card__value">0</div>
+                <div class="stat-card__label">Inativos</div>
+              </div>
+            </div>
+            <div class="stat-card stat-card--info" id="stat-localizacoes">
+              <div class="stat-card__icon">📍</div>
+              <div class="stat-card__content">
+                <div class="stat-card__value">0</div>
+                <div class="stat-card__label">Localizações</div>
+              </div>
+            </div>
+            <div class="stat-card stat-card--purple" id="stat-setores">
+              <div class="stat-card__icon">🏢</div>
+              <div class="stat-card__content">
+                <div class="stat-card__value">0</div>
+                <div class="stat-card__label">Setores</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Distribuições e Gráficos Rápidos -->
+          <div class="dashboard-grid">
+            <div class="card">
+              <div class="card__header">
+                <h3 class="card__title">Distribuição por Setor</h3>
+              </div>
+              <div class="card__body" id="dashboard-setor-list">
+                <p class="text-muted">Carregando dados...</p>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card__header">
+                <h3 class="card__title">Distribuição por Localização</h3>
+              </div>
+              <div class="card__body" id="dashboard-loc-list">
+                <p class="text-muted">Carregando dados...</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 2: RAMAIS (CARDS & TABELA)            -->
+        <!-- ========================================== -->
+        <section class="view-container" id="view-ramais">
+          <!-- Barra Superior de Navegação Rápida por Estabelecimentos (IMI, ICA, PUL, RIO) -->
+          <div class="establishment-nav-bar" id="establishment-nav-bar" aria-label="Navegação por Estabelecimentos"></div>
+
+          <!-- Drop Zone CSV (Visível apenas para Admin) -->
+          <div class="drop-zone admin-only" id="drop-zone" aria-label="Área de importação de CSV">
+            <div class="drop-zone__content" id="drop-zone-content">
+              <div class="drop-zone__icon">📁</div>
+              <p class="drop-zone__text">Arraste uma planilha CSV aqui para importar / atualizar o banco de dados</p>
+              <p class="drop-zone__hint">ou clique no botão abaixo</p>
+              <button class="btn btn--primary btn--sm" id="btn-select-csv" type="button">Selecionar Arquivo CSV</button>
+              <input type="file" id="file-input" accept=".csv" class="sr-only" aria-label="Selecionar CSV">
+            </div>
+            <div class="drop-zone__file-info hidden" id="file-info">
+              <div class="file-info__item">
+                <span class="file-info__label">Arquivo:</span>
+                <span class="file-info__value" id="file-name">—</span>
+              </div>
+              <div class="file-info__item">
+                <span class="file-info__label">Registros:</span>
+                <span class="file-info__value" id="file-records">0</span>
+              </div>
+              <div class="file-info__item">
+                <span class="file-info__label">Colunas:</span>
+                <span class="file-info__value" id="file-columns">0</span>
+              </div>
+              <button class="btn btn--secondary btn--sm" id="btn-new-import" type="button">Importar Outro</button>
+            </div>
+          </div>
+
+          <!-- Barra de Ferramentas / Filtros -->
+          <div class="toolbar">
+            <div class="toolbar__search">
+              <div class="search-wrapper">
+                <span class="search-wrapper__icon" aria-hidden="true">🔍</span>
+                <input type="search" class="search-input" id="search-input" placeholder="Pesquisar por ramal, nome, setor, andar..." aria-label="Pesquisar">
+              </div>
+            </div>
+
+            <div class="toolbar__filters">
+              <select class="filter-select" id="filter-status" aria-label="Filtrar por Status">
+                <option value="">Status: Todos</option>
+              </select>
+              <select class="filter-select" id="filter-localizacao" aria-label="Filtrar por Estabelecimento">
+                <option value="">Estabelecimento: Todos</option>
+              </select>
+              <select class="filter-select" id="filter-setor" aria-label="Filtrar por Setor">
+                <option value="">Setor: Todos</option>
+              </select>
+              <select class="filter-select" id="filter-empresa" aria-label="Filtrar por Empresa">
+                <option value="">Empresa: Todas</option>
+              </select>
+              <select class="filter-select hidden" id="page-size-select" aria-label="Registros por Página">
+                <option value="10">10 por página</option>
+                <option value="20">20 por página</option>
+                <option value="50" selected>50 por página</option>
+                <option value="100">100 por página</option>
+                <option value="all">Todos os registros</option>
+              </select>
+            </div>
+
+            <div class="toolbar__actions">
+              <!-- Alternador de Modo de Visualização (Quadrados vs Tabela) -->
+              <button class="btn btn--secondary" id="btn-toggle-view-mode" type="button" title="Alternar entre visualização em Quadrados e Tabela">
+                <span id="view-mode-icon">📋</span> <span id="view-mode-label">Modo Tabela</span>
+              </button>
+
+              <!-- Botão Dinâmico de Gestão de Colunas (visível no modo tabela) -->
+              <button class="btn btn--secondary hidden" id="btn-config-columns" type="button" title="Configurar colunas visíveis da tabela">
+                ⚙️ Colunas
+              </button>
+              
+              <!-- Ações Administrativas -->
+              <button class="btn btn--primary admin-only" id="btn-add-ramal" type="button">
+                + Novo Ramal
+              </button>
+              <button class="btn btn--secondary admin-only" id="btn-export-csv" type="button" title="Exportar dados para CSV">
+                ↗ Exportar CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- NOVO CONTAINER: Visualização em Quadrados / Cards por Setor (Padrão) -->
+          <div id="ramais-cards-container" class="ramais-cards-container" aria-label="Ramais por Setor e Estabelecimento"></div>
+
+          <!-- CONTAINER DA TABELA CLÁSSICA (Oculto por padrão, ativado pelo botão) -->
+          <div id="ramais-table-wrapper" class="hidden">
+            <!-- Barra de Ações em Lote (Bulk Actions) -->
+            <div class="bulk-actions hidden" id="bulk-actions">
+              <span class="bulk-actions__count" id="bulk-count">0 selecionados</span>
+              <button class="btn btn--danger btn--sm" id="btn-delete-selected" type="button">Excluir Selecionados</button>
+              <button class="btn btn--ghost btn--sm" id="btn-clear-selection" type="button">Limpar Seleção</button>
+            </div>
+
+            <!-- Tabela de Dados -->
+            <div class="table-container">
+              <table class="data-table" id="data-table" aria-label="Tabela de Ramais">
+                <thead id="table-head"></thead>
+                <tbody id="table-body"></tbody>
+              </table>
+              <div class="table-empty hidden" id="table-empty">
+                <p>Nenhum ramal encontrado com os filtros aplicados.</p>
+              </div>
+            </div>
+
+            <!-- Paginação -->
+            <nav class="pagination" id="pagination" aria-label="Paginação da Lista">
+              <button class="btn btn--ghost btn--sm" id="btn-prev-page" type="button">← Anterior</button>
+              <span class="pagination__info" id="pagination-info">Página 1</span>
+              <button class="btn btn--ghost btn--sm" id="btn-next-page" type="button">Próxima →</button>
+            </nav>
+          </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW: COLABORADORES (HISTÓRICO E PERMISSÕES) -->
+        <!-- ========================================== -->
+        <section class="view-container hidden admin-only" id="view-colaboradores">
+          <div class="toolbar">
+            <div class="toolbar__search" style="max-width: 450px;">
+              <div class="search-wrapper">
+                <span class="search-wrapper__icon" aria-hidden="true">🔍</span>
+                <input type="search" class="search-input" id="search-colaboradores" placeholder="Buscar por usuário, nome ou e-mail..." aria-label="Pesquisar Colaboradores">
+              </div>
+            </div>
+            <div class="toolbar__actions">
+              <button class="btn btn--secondary" id="btn-refresh-colaboradores" type="button" title="Atualizar Lista">
+                🔄 Atualizar Lista
+              </button>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom: 20px;">
+            <div class="card__header" style="display: flex; justify-content: space-between; align-items: center;">
+              <h3 class="card__title">👥 Histórico de Logins e Permissões</h3>
+              <span class="text-muted" id="colaboradores-count" style="font-size: 0.85rem;">0 colaboradores registrados</span>
+            </div>
+            <div class="card__body" style="padding: 0;">
+              <div class="table-container" style="border: none; border-radius: 0;">
+                <table class="data-table" id="colaboradores-table" aria-label="Tabela de Colaboradores">
+                  <thead>
+                    <tr>
+                      <th>Usuário</th>
+                      <th>Nome Completo</th>
+                      <th>E-mail</th>
+                      <th>Primeiro Login</th>
+                      <th>Último Login</th>
+                      <th style="text-align: center;">Acessos</th>
+                      <th>Perfil de Acesso</th>
+                      <th style="text-align: right;">Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody id="colaboradores-table-body">
+                    <tr><td colspan="8" style="text-align: center; padding: 32px;" class="text-muted">Carregando colaboradores...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 3: CONFIGURAÇÕES                      -->
+        <!-- ========================================== -->
+        <section class="view-container hidden" id="view-configuracoes">
+          <div class="settings-grid">
+            <!-- Card de Configuração do Active Directory / LDAP -->
+            <div class="card admin-only">
+              <div class="card__header">
+                <h3 class="card__title">🏢 Integração Active Directory (LDAP)</h3>
+              </div>
+              <div class="card__body">
+                <p class="text-muted" style="margin-bottom:16px;">Parâmetros para autenticação e validação de grupos de rede.</p>
+                
+                <div class="form-group">
+                  <label class="form-label" for="cfg-ldap-url">Servidor LDAP / Domain Controller:</label>
+                  <input type="text" class="form-input" id="cfg-ldap-url" value="ldap://10.250.220.200:389" placeholder="ex: ldap://10.250.220.200:389">
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="cfg-ldap-base-dn">Base DN:</label>
+                  <input type="text" class="form-input" id="cfg-ldap-base-dn" value="DC=imi,DC=local" placeholder="ex: DC=imi,DC=local">
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="cfg-ldap-bind-user">Conta de Serviço (Bind User):</label>
+                  <input type="text" class="form-input" id="cfg-ldap-bind-user" value="ramal.mngt@imi.local" placeholder="ex: ramal.mngt@imi.local">
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="cfg-ldap-bind-pass">Senha da Conta de Serviço:</label>
+                  <input type="password" class="form-input" id="cfg-ldap-bind-pass" value="********" placeholder="Digite a nova senha se desejar alterar">
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="cfg-ldap-group-dn">DistinguishedName do Grupo Obrigatório:</label>
+                  <input type="text" class="form-input" id="cfg-ldap-group-dn" value="CN=GR_RAMAL_MNGT,OU=Grupos,OU=T.I,DC=imi,DC=local">
+                  <span class="form-help">Apenas usuários que pertencerem a este grupo conseguirão acessar o sistema.</span>
+                </div>
+
+                <div style="display:flex; gap:8px; margin-top:16px; flex-wrap:wrap;">
+                  <button class="btn btn--primary" id="btn-save-ldap-config" type="button">Salvar Configurações LDAP</button>
+                  <button class="btn btn--secondary" id="btn-test-ldap-config" type="button">🔌 Testar Conexão AD</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card de Paleta de Cores e Identidade Visual (ICA / IMI / Custom) -->
+            <div class="card admin-only">
+              <div class="card__header">
+                <h3 class="card__title">🎨 Identidade Visual e Paleta de Cores</h3>
+              </div>
+              <div class="card__body">
+                <p class="text-muted" style="margin-bottom:16px;">
+                  Selecione a identidade visual da sua unidade ou personalize totalmente as cores do sistema.
+                </p>
+
+                <div class="palette-grid">
+                  <!-- Opção 1: IMI -->
+                  <div class="palette-card active" data-palette-choice="imi" id="palette-card-imi">
+                    <div class="palette-card__header">
+                      <span class="palette-card__title">🔵 IMI</span>
+                      <span class="palette-card__badge badge--neutral">Padrão</span>
+                    </div>
+                    <p class="palette-card__description">Tons corporativos em Azul Cobalto, Ciano, Esmeralda e Ouro.</p>
+                    <div class="palette-swatches">
+                      <div class="swatch-circle" style="background-color: #0077C8;" title="Azul IMI"></div>
+                      <div class="swatch-circle" style="background-color: #00ACC1;" title="Ciano Elétrico"></div>
+                      <div class="swatch-circle" style="background-color: #43A047;" title="Verde Esmeralda"></div>
+                      <div class="swatch-circle" style="background-color: #FBC02D;" title="Dourado"></div>
+                      <div class="swatch-circle" style="background-color: #E53935;" title="Coral/Vermelho"></div>
+                    </div>
+                  </div>
+
+                  <!-- Opção 2: ICA -->
+                  <div class="palette-card" data-palette-choice="ica" id="palette-card-ica">
+                    <div class="palette-card__header">
+                      <span class="palette-card__title">🟠 ICA</span>
+                      <span class="palette-card__badge badge--neutral">Unidade ICA</span>
+                    </div>
+                    <p class="palette-card__description">Tons quentes em Laranja Vivo, Coral, Vermelho Carmim e Verde Oliva.</p>
+                    <div class="palette-swatches">
+                      <div class="swatch-circle" style="background-color: #E65100;" title="Laranja ICA"></div>
+                      <div class="swatch-circle" style="background-color: #F58220;" title="Laranja Solar"></div>
+                      <div class="swatch-circle" style="background-color: #D84315;" title="Coral Vermelho"></div>
+                      <div class="swatch-circle" style="background-color: #C8232B;" title="Carmim"></div>
+                      <div class="swatch-circle" style="background-color: #7A9A60;" title="Verde Oliva"></div>
+                    </div>
+                  </div>
+
+                  <!-- Opção 3: Personalizado -->
+                  <div class="palette-card" data-palette-choice="custom" id="palette-card-custom">
+                    <div class="palette-card__header">
+                      <span class="palette-card__title">🎛️ Personalizado</span>
+                      <span class="palette-card__badge badge--neutral">Custom</span>
+                    </div>
+                    <p class="palette-card__description">Defina manualmente as cores primárias, menus e fundos.</p>
+                    <div class="palette-swatches" id="custom-preview-swatches">
+                      <div class="swatch-circle" id="swatch-custom-primary" style="background-color: #0077C8;" title="Cor Primária"></div>
+                      <div class="swatch-circle" id="swatch-custom-sidebar" style="background-color: #0F1E2E;" title="Menu Lateral"></div>
+                      <div class="swatch-circle" id="swatch-custom-accent" style="background-color: #00ACC1;" title="Destaque"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Painel de Customização de Cores (Visível se Custom selecionado) -->
+                <div class="custom-palette-panel hidden" id="custom-palette-panel">
+                  <h4 style="font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); margin-bottom: 12px;">Configuração Fina de Cores:</h4>
+                  
+                  <div class="custom-color-row">
+                    <span class="custom-color-label">Cor Primária (Botões e Links):</span>
+                    <div class="custom-color-input-wrapper">
+                      <input type="color" class="custom-color-picker" id="picker-primary" value="#0077C8">
+                      <input type="text" class="custom-color-hex" id="hex-primary" value="#0077C8" maxlength="7">
+                    </div>
+                  </div>
+
+                  <div class="custom-color-row">
+                    <span class="custom-color-label">Cor Primária Hover (Ao passar o mouse):</span>
+                    <div class="custom-color-input-wrapper">
+                      <input type="color" class="custom-color-picker" id="picker-primary-hover" value="#005A9E">
+                      <input type="text" class="custom-color-hex" id="hex-primary-hover" value="#005A9E" maxlength="7">
+                    </div>
+                  </div>
+
+                  <div class="custom-color-row">
+                    <span class="custom-color-label">Cor do Menu Lateral (Sidebar):</span>
+                    <div class="custom-color-input-wrapper">
+                      <input type="color" class="custom-color-picker" id="picker-sidebar" value="#0F1E2E">
+                      <input type="text" class="custom-color-hex" id="hex-sidebar" value="#0F1E2E" maxlength="7">
+                    </div>
+                  </div>
+
+                  <div class="custom-color-row">
+                    <span class="custom-color-label">Cor de Realce / Destaque:</span>
+                    <div class="custom-color-input-wrapper">
+                      <input type="color" class="custom-color-picker" id="picker-accent" value="#00ACC1">
+                      <input type="text" class="custom-color-hex" id="hex-accent" value="#00ACC1" maxlength="7">
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;">
+                  <button class="btn btn--primary" id="btn-save-palette" type="button">Salvar Paleta de Cores</button>
+                  <button class="btn btn--secondary hidden" id="btn-reset-custom-palette" type="button">Restaurar Padrão</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card de Logo do Instituto -->
+            <div class="card">
+              <div class="card__header">
+                <h3 class="card__title">🖼️ Logo da Organização</h3>
+              </div>
+              <div class="card__body">
+                <p class="text-muted" style="margin-bottom:16px;">A imagem será exibida no menu lateral e na tela de login.</p>
+                <div class="logo-preview-box">
+                  <img id="logo-preview" src="" alt="Preview da Logo" style="display:none; max-height:80px;">
+                </div>
+                <div class="admin-only" style="display:flex; gap:8px; margin-top:12px;">
+                  <button class="btn btn--secondary btn--sm" id="btn-upload-logo" type="button">Selecionar Imagem</button>
+                  <button class="btn btn--danger btn--sm" id="btn-remove-logo" type="button">Remover Logo</button>
+                  <input type="file" id="logo-file-input" accept="image/*" class="sr-only" aria-label="Upload de Logo">
+                </div>
+              </div>
+            </div>
+
+            <!-- Card de Alteração de Senha do Admin Local -->
+            <div class="card admin-only">
+              <div class="card__header">
+                <h3 class="card__title">🔐 Senha do Administrador Local</h3>
+              </div>
+              <div class="card__body">
+                <div class="form-group">
+                  <label class="form-label" for="new-admin-password">Nova Senha:</label>
+                  <input type="password" class="form-input" id="new-admin-password" placeholder="Digite a nova senha">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="confirm-admin-password">Confirmar Nova Senha:</label>
+                  <input type="password" class="form-input" id="confirm-admin-password" placeholder="Confirme a nova senha">
+                </div>
+                <button class="btn btn--primary" id="btn-change-password" type="button">Atualizar Senha Local</button>
+              </div>
+            </div>
+
+            <!-- Card de Ações Rápidas de Dados -->
+            <div class="card admin-only">
+              <div class="card__header">
+                <h3 class="card__title">🗄️ Gerenciamento da Base MariaDB</h3>
+              </div>
+              <div class="card__body">
+                <p class="text-muted" style="margin-bottom:16px;">Carregue uma lista de exemplo fictícia ou limpe todos os ramais da base.</p>
+                <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                  <button class="btn btn--secondary" id="btn-load-example" type="button">Carregar Lista de Exemplo</button>
+                  <button class="btn btn--danger" id="btn-clear-data" type="button">Limpar Toda a Base</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Rodapé -->
+      <footer class="app-footer">
+        <p>🔒 Gerenciador de Ramais • Autenticação LDAP/AD Integrada com Validação de Grupo</p>
+      </footer>
+    </main>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAIS DO SISTEMA                          -->
+  <!-- ========================================== -->
+
+  <!-- Modal: Gestão Dinâmica de Colunas -->
+  <div class="modal-overlay hidden" id="modal-columns">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="columns-modal-title">
+      <div class="modal__header">
+        <h2 class="modal__title" id="columns-modal-title">⚙️ Seleção de Colunas Visíveis</h2>
+        <button class="btn btn--ghost modal__close" data-close-modal="modal-columns" type="button" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal__body">
+        <p class="form-help" style="margin-bottom:12px">Marque ou desmarque as colunas que deseja exibir na tabela de ramais:</p>
+        <div class="column-actions-bar">
+          <button class="btn btn--ghost btn--sm" id="btn-select-all-columns" type="button">Marcar Todas</button>
+          <button class="btn btn--ghost btn--sm" id="btn-reset-columns" type="button">Restaurar Padrão</button>
+        </div>
+        <ul class="column-list" id="column-list"></ul>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--primary" data-close-modal="modal-columns" type="button">Concluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Adicionar / Editar Ramal -->
+  <div class="modal-overlay hidden" id="modal-add">
+    <div class="modal modal--large" role="dialog" aria-modal="true" aria-labelledby="add-title">
+      <div class="modal__header">
+        <h2 class="modal__title" id="add-title">Cadastrar Novo Ramal</h2>
+        <button class="btn btn--ghost modal__close" data-close-modal="modal-add" type="button" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal__body">
+        <form id="form-add-ramal" onsubmit="return false;">
+          <div id="add-form-fields"></div>
+        </form>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" data-close-modal="modal-add" type="button">Cancelar</button>
+        <button class="btn btn--primary" id="btn-save-ramal" type="button">Salvar no Banco</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Mapeamento de CSV -->
+  <div class="modal-overlay hidden" id="modal-mapping">
+    <div class="modal modal--large" role="dialog" aria-modal="true" aria-labelledby="mapping-title">
+      <div class="modal__header">
+        <h2 class="modal__title" id="mapping-title">Mapeamento de Colunas do CSV</h2>
+        <button class="btn btn--ghost modal__close" data-close-modal="modal-mapping" type="button" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal__body">
+        <p class="form-help" style="margin-bottom:12px;">Relacione as colunas da sua planilha CSV com os campos padronizados do sistema:</p>
+        <div id="mapping-rows"></div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" data-close-modal="modal-mapping" type="button">Cancelar</button>
+        <button class="btn btn--primary" id="btn-confirm-mapping" type="button">Importar para o MariaDB</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Exportação CSV -->
+  <div class="modal-overlay hidden" id="modal-export">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="export-title">
+      <div class="modal__header">
+        <h2 class="modal__title" id="export-title">Exportar Lista para CSV</h2>
+        <button class="btn btn--ghost modal__close" data-close-modal="modal-export" type="button" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-group">
+          <label class="form-label" for="export-separator">Delimitador do CSV:</label>
+          <select class="form-select" id="export-separator">
+            <option value=";">Ponto e vírgula (;)</option>
+            <option value=",">Vírgula (,)</option>
+            <option value="	">Tabulação (\t)</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" data-close-modal="modal-export" type="button">Cancelar</button>
+        <button class="btn btn--primary" id="btn-do-export" type="button">Baixar Arquivo CSV</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Confirmação -->
+  <div class="modal-overlay hidden" id="modal-confirm">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title" style="max-width:440px;">
+      <div class="modal__header">
+        <h2 class="modal__title" id="confirm-title">Confirmação</h2>
+      </div>
+      <div class="modal__body">
+        <p id="confirm-message">Deseja realmente continuar?</p>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" id="btn-confirm-cancel" type="button">Cancelar</button>
+        <button class="btn btn--danger" id="btn-confirm-ok" type="button">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS DA APLICAÇÃO -->
+  <script src="js/api.js"></script>
+  <script src="js/csv-parser.js"></script>
+  <script src="js/data-normalizer.js"></script>
+  <script src="js/table.js"></script>
+  <script src="js/cards-view.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

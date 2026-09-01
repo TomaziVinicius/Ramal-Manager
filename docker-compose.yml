@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # Serviço de Banco de Dados MariaDB
+  db:
+    image: mariadb:11.4
+    container_name: ramais_mariadb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ramais_root_secret_pass
+      MYSQL_DATABASE: ramais_db
+      MYSQL_USER: ramais_user
+      MYSQL_PASSWORD: ramais_secret_pass
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "3306:3306"
+    networks:
+      - ramais_network
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Serviço da Aplicação Node.js
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ramais_app
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+      JWT_SECRET: ramais_secret_jwt_key_2026_super_secure_change_me!
+      JWT_EXPIRES_IN: 8h
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: ramais_user
+      DB_PASSWORD: ramais_secret_pass
+      DB_NAME: ramais_db
+      DB_CONNECTION_LIMIT: 10
+    volumes:
+      - ./public:/app/public
+      - ./server.js:/app/server.js
+    ports:
+      - "80:3000"
+      - "3000:3000"
+    networks:
+      - ramais_network
+
+volumes:
+  mariadb_data:
+    driver: local
+
+networks:
+  ramais_network:
+    driver: bridge
