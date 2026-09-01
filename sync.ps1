@@ -43,15 +43,12 @@ try {
     }
     Write-Host " [OK]" -ForegroundColor Green
 
-    # 4. Atualizar arquivos dentro do container Docker
-    Write-Host "[4/4] Aplicando alteracoes no container Docker ramais_app..." -NoNewline
-    $dockerCmd = "docker cp $RemoteDir/public/. ramais_app:/app/public/ && docker cp $RemoteDir/server.js ramais_app:/app/server.js"
-    
+    # 4. Atualizar arquivos dentro do container Docker (via volumes mapeados)
+    Write-Host "[4/4] Verificando container Docker ramais_app..." -NoNewline
     if ($RestartApp) {
-        $dockerCmd += " && docker restart ramais_app"
+        $dockerCmd = "docker restart ramais_app"
+        $remoteExec = ssh -o BatchMode=yes "$ServerUser@$ServerHost" $dockerCmd 2>&1
     }
-
-    $remoteExec = ssh -o BatchMode=yes "$ServerUser@$ServerHost" $dockerCmd 2>&1
     Write-Host " [OK]" -ForegroundColor Green
 
     $sw.Stop()

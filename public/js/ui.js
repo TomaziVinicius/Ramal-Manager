@@ -167,24 +167,22 @@ const UI = (function() {
 
         if (msgEl) msgEl.textContent = message;
 
-        const handleOk = () => {
-            closeModal('modal-confirm');
-            cleanup();
-            if (onConfirm) onConfirm();
-        };
+        if (okBtn) {
+            okBtn.onclick = () => {
+                closeModal('modal-confirm');
+                okBtn.onclick = null;
+                if (cancelBtn) cancelBtn.onclick = null;
+                if (onConfirm) onConfirm();
+            };
+        }
 
-        const handleCancel = () => {
-            closeModal('modal-confirm');
-            cleanup();
-        };
-
-        const cleanup = () => {
-            if (okBtn) okBtn.removeEventListener('click', handleOk);
-            if (cancelBtn) cancelBtn.removeEventListener('click', handleCancel);
-        };
-
-        if (okBtn) okBtn.addEventListener('click', handleOk);
-        if (cancelBtn) cancelBtn.addEventListener('click', handleCancel);
+        if (cancelBtn) {
+            cancelBtn.onclick = () => {
+                closeModal('modal-confirm');
+                cancelBtn.onclick = null;
+                if (okBtn) okBtn.onclick = null;
+            };
+        }
 
         openModal('modal-confirm');
     }
@@ -349,41 +347,34 @@ const UI = (function() {
         html += '</div>';
         container.innerHTML = html;
 
-        const handleSave = () => {
-            const data = existingData ? { ...existingData } : {};
-            let hasError = false;
-
-            allFields.forEach(field => {
-                const input = document.getElementById(`form-field-${field.key}`);
-                if (input) {
-                    const val = input.value.trim();
-                    if (field.required && !val) {
-                        input.classList.add('form-input--error');
-                        hasError = true;
-                    } else {
-                        input.classList.remove('form-input--error');
-                    }
-                    data[field.key] = val;
-                }
-            });
-
-            if (hasError) {
-                showNotification('Por favor, preencha os campos obrigatórios.', 'warning');
-                return;
-            }
-
-            closeModal('modal-add');
-            cleanup();
-            if (onSave) onSave(data);
-        };
-
-        const cleanup = () => {
-            if (saveBtn) saveBtn.removeEventListener('click', handleSave);
-        };
-
         if (saveBtn) {
-            cleanup();
-            saveBtn.addEventListener('click', handleSave);
+            saveBtn.onclick = () => {
+                const data = existingData ? { ...existingData } : {};
+                let hasError = false;
+
+                allFields.forEach(field => {
+                    const input = document.getElementById(`form-field-${field.key}`);
+                    if (input) {
+                        const val = input.value.trim();
+                        if (field.required && !val) {
+                            input.classList.add('form-input--error');
+                            hasError = true;
+                        } else {
+                            input.classList.remove('form-input--error');
+                        }
+                        data[field.key] = val;
+                    }
+                });
+
+                if (hasError) {
+                    showNotification('Por favor, preencha os campos obrigatórios.', 'warning');
+                    return;
+                }
+
+                closeModal('modal-add');
+                saveBtn.onclick = null;
+                if (onSave) onSave(data);
+            };
         }
 
         openModal('modal-add');

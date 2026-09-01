@@ -64,15 +64,13 @@ function Handle-FileChange {
         # 1. Enviar arquivo via SCP
         scp -o BatchMode=yes -o ConnectTimeout=4 "$fullPath" "$ServerUser@$ServerHost`:$remotePath" 2>&1 | Out-Null
 
-        # 2. Atualizar no container Docker
+        # 2. Atualizar no container Docker (via volumes mapeados)
         if ($unixRelPath -match "^public/") {
-            $cmd = "docker cp $remotePath ramais_app:/app/$unixRelPath"
-            ssh -o BatchMode=yes "$ServerUser@$ServerHost" $cmd 2>&1 | Out-Null
             $sw.Stop()
             Write-Host " [OK] ($($sw.ElapsedMilliseconds)ms - Frontend Atualizado)" -ForegroundColor Green
         }
         elseif ($unixRelPath -eq "server.js") {
-            $cmd = "docker cp $remotePath ramais_app:/app/server.js && docker restart ramais_app"
+            $cmd = "docker restart ramais_app"
             ssh -o BatchMode=yes "$ServerUser@$ServerHost" $cmd 2>&1 | Out-Null
             $sw.Stop()
             Write-Host " [OK] ($($sw.ElapsedMilliseconds)ms - Backend Reiniciado)" -ForegroundColor Cyan
