@@ -1,0 +1,32 @@
+# Dependências
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Variáveis de Ambiente e Arquivos Sensíveis
+.env
+.env.local
+.env.*.local
+documentacao.md
+
+# Logs e Arquivos Temporários
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Diretório de Dados Local do Docker / Banco
+mariadb_data/
+*.sql.gz
+*.backup
+backup_*.sql
+
+# Backups e IDEs
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
